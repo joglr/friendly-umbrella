@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "name": "friendly-umbrella",
+  "alias": ["friendly-umbrella.jonasroessum.com"],
+  "builds": [{
+    "src": "package.json",
+    "use": "@now/static-build"
+  }]
+}

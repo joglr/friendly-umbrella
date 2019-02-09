@@ -1,3 +1,9 @@
+# Friendly Umbrella
+
+This is not your usual create-react-app starter project.
+
+https://friendly-umbrella.jonasroessum.com/
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
