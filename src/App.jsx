@@ -2,27 +2,37 @@ import React, { useState, useEffect, useRef } from 'react'
 import logo from './logo.svg'
 import './App.css'
 
-const initialSpeed = (2 * Math.PI) / 2000
+const { PI, sin, cos, sqrt, atan2 } = Math
+
+const initialSpeed = (2 * PI) / 2000
+const maxSpeed = 50 * initialSpeed
+
+const cartesianFromEvent = e => [e.pageX, e.pageY]
+const polarFromCartesian = ([x, y]) => {
+  const r = size(distance([0, 0], [x, y]))
+  const θ = atan2(y, x)
+  return [r, θ]
+}
+const cartesianFromPolar = ([r, θ]) => [r * cos(θ), r * sin(θ)]
 
 function App() {
   const [rotation, setRotation] = useState(0)
-  const [touches, touchTime, events] = useTouchesAndTime()
+  const { touches, touchTime, events } = useTouchesAndTime()
   const prevTouchesRef = useRef([])
   const prevTouchTimeRef = useRef(0)
   const [speed, setSpeed] = useState(initialSpeed)
   useEffect(() => {
     if (touches.length > 0 && prevTouchesRef.current.length > 0) {
       const timeDiff = touchTime - prevTouchTimeRef.current
-      const dist = distance(touches[0], prevTouchesRef.current[0])
-      const distLength = Math.sqrt(dist[0] ** 2 + dist[1] ** 2)
-      const distDirection =
-        (dist[0] === 0 ? 0 : dist[0] / Math.abs(dist[0])) *
-        (dist[1] > window.innerHeight / 2 ? 1 : -1)
-      const deltaV = distDirection * (distLength / timeDiff / 100)
-      if (deltaV !== deltaV) {
-        debugger
-      }
-      if (timeDiff && dist) setSpeed(prevSpeed => prevSpeed + deltaV)
+      const [, touchθ] = touches[0]
+      const [, prevTouchθ] = prevTouchesRef.current[0]
+
+      const Δθ = touchθ - prevTouchθ
+      const ΔθΔt = Δθ / timeDiff
+      if (ΔθΔt)
+        setSpeed(prevSpeed =>
+          Math.abs(prevSpeed + ΔθΔt) > maxSpeed ? prevSpeed : prevSpeed + ΔθΔt
+        )
     }
     prevTouchesRef.current = touches
     prevTouchTimeRef.current = touchTime
@@ -32,8 +42,7 @@ function App() {
       Math.abs(prevSpeed) < initialSpeed ? prevSpeed : prevSpeed * 0.99
     )
     setRotation(prevRotation => prevRotation + speed)
-  }, 1000)
-  console.log(speed)
+  }, 60 / 1000)
   return (
     <div className="App" {...events}>
       <header className="App-header">
@@ -45,16 +54,6 @@ function App() {
           }}
           alt="logo"
         />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer">
-          Learn React
-        </a>
       </header>
     </div>
   )
@@ -78,7 +77,13 @@ function useTouchesAndTime() {
 
   const touchSupported = 'ontouchstart' in document.body
   function setTouchesAndTime(touches) {
-    setTouches(touches)
+    const halfWindowSize = [window.innerWidth / 2, window.innerHeight / 2]
+    setTouches(
+      touches
+        .map(cartesianFromEvent)
+        .map(coords => coords.map((n, i) => n - halfWindowSize[i]))
+        .map(polarFromCartesian)
+    )
     setTouchTime(new Date().getTime())
   }
   function handleTouch(e) {
@@ -111,11 +116,14 @@ function useTouchesAndTime() {
       : {})
   }
 
-  return [touches, touchTime, events]
+  return { touches, touchTime, events }
 }
 
-function distance({ pageX: x1, pageY: y1 }, { pageX: x2, pageY: y2 }) {
+function distance([x1, y1], [x2, y2]) {
   return [x2 - x1, y2 - y1]
+}
+function size(vector) {
+  return sqrt(vector[0] ** 2 + vector[1] ** 2)
 }
 
 export default App
